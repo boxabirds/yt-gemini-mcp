@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ask-youtube-transcript": {
+      "command": "python",
+      "args": ["youtube_transcript_server.py"],
+      "description": "Provide a YouTube URL and have a GEMINI_API_KEY set up and you can ask questions of both the transcript and the video content (default 1 frame per second)"
+    }
+  }
+}
