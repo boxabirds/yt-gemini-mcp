@@ -33,7 +33,9 @@ These installers download the server directly without requiring git:
 ```bash
 # Using curl
 curl -sSL https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.sh | bash
+```
 
+```bash
 # Using wget
 wget -qO- https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.sh | bash
 ```
