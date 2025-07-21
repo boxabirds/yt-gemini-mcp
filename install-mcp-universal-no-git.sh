@@ -14,6 +14,12 @@
 
 set -euo pipefail
 
+# Parse command line arguments
+FORCE_REINSTALL=false
+if [[ "${1:-}" == "--force" ]]; then
+    FORCE_REINSTALL=true
+fi
+
 # Configuration
 REPO_BASE="https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main"
 SERVER_URL="$REPO_BASE/youtube_transcript_server_fastmcp.py"
@@ -159,49 +165,103 @@ detect_clients() {
     fi
 }
 
-# Get or request API key
-get_or_request_key() {
+# Store API key in the central keys.json file
+store_key() {
     local key_name="$1"
-    local prompt="$2"
-    
+    local key_value="$2"
     mkdir -p "$INSTALLER_DIR"
     
-    # Check if key already exists
+    local temp_file
+    temp_file=$(mktemp)
+    
     if [ -f "$KEYS_FILE" ]; then
-        local existing_key
-        existing_key=$(jq -r ".$key_name // empty" "$KEYS_FILE" 2>/dev/null || echo "")
-        if [ -n "$existing_key" ]; then
-            echo "$existing_key"
-            return
-        fi
+        jq --arg key "$key_name" --arg value "$key_value" '.[$key] = $value' "$KEYS_FILE" > "$temp_file"
+    else
+        jq -n --arg key "$key_name" --arg value "$key_value" '{($key): $value}' > "$temp_file"
     fi
     
-    # Request key from user
-    echo "$prompt" >&2
-    read -r -p "Enter $key_name: " key_value
+    mv "$temp_file" "$KEYS_FILE"
+    chmod 600 "$KEYS_FILE"
+}
+
+# Get or request API key
+get_or_request_key() {
+    local key_name="GEMINI_API_KEY"
+    
+    # Check for existing key if --force is not used
+    if ! $FORCE_REINSTALL; then
+        # Check our own cache first
+        if [ -f "$KEYS_FILE" ]; then
+            local existing_key
+            existing_key=$(jq -r "."$key_name" // empty" "$KEYS_FILE" 2>/dev/null || echo "")
+            if [ -n "$existing_key" ]; then
+                echo "$existing_key"
+                return
+            fi
+        fi
+
+        # Check client configurations for existing key
+        local clients=()
+        while IFS= read -r client; do clients+=("$client"); done < <(detect_clients || true)
+        
+        for client in "${clients[@]}"; do
+            local config_path=""
+            local jq_path=""
+            case "$client" in
+                "gemini")
+                    config_path="$HOME/.gemini/settings.json"
+                    jq_path='.mcpServers."youtube-transcript".env.GEMINI_API_KEY'
+                    ;;
+                "windsurf")
+                    if [ -d "$HOME/Library/Application Support/Windsurf" ]; then
+                        config_path="$HOME/Library/Application Support/Windsurf/mcp_config.json"
+                    elif [ -d "$HOME/.config/Windsurf" ]; then
+                        config_path="$HOME/.config/Windsurf/mcp_config.json"
+                    else
+                        config_path="$HOME/.codeium/windsurf/mcp_config.json"
+                    fi
+                    jq_path='.mcpServers."youtube-transcript".env.GEMINI_API_KEY'
+                    ;;
+                "cursor")
+                    config_path="$HOME/.cursor/mcp.json"
+                    jq_path='.mcpServers."youtube-transcript".env.GEMINI_API_KEY'
+                    ;;
+            esac
+
+            if [ -n "$config_path" ] && [ -f "$config_path" ]; then
+                local found_key
+                found_key=$(jq -r "$jq_path // empty" "$config_path" 2>/dev/null || echo "")
+                if [ -n "$found_key" ]; then
+                    log_info "Found existing Gemini API key in $client configuration"
+                    log_info "Use --force to enter a new key"
+                    store_key "$key_name" "$found_key"
+                    echo "$found_key"
+                    return
+                fi
+            fi
+        done
+    fi
+
+    # Prompt user for key
+    echo
+    log_warn "Setting up Gemini API key for MCP server"
+    echo
+    echo "This MCP server needs its own Gemini API key that will be stored"
+    echo "in a local configuration file. This allows you to:"
+    echo "  • Manage this key separately from your shell environment"
+    echo "  • Revoke access without affecting other applications"
+    echo "  • Track usage specifically for YouTube video analysis"
+    echo
+    echo "Get your API key at: https://aistudio.google.com/apikey"
+    echo
+    read -r -p "Enter your Gemini API key: " key_value < /dev/tty
     
     if [ -z "$key_value" ]; then
         log_error "API key cannot be empty"
         exit 1
     fi
     
-    # Store key
-    local temp_file
-    temp_file=$(mktemp)
-    
-    if [ -f "$KEYS_FILE" ]; then
-        jq --arg key "$key_name" --arg value "$key_value" '
-            .[$key] = $value
-        ' "$KEYS_FILE" > "$temp_file"
-    else
-        jq -n --arg key "$key_name" --arg value "$key_value" '
-            {($key): $value}
-        ' > "$temp_file"
-    fi
-    
-    mv "$temp_file" "$KEYS_FILE"
-    chmod 600 "$KEYS_FILE"
-    
+    store_key "$key_name" "$key_value"
     echo "$key_value"
 }
 
@@ -356,9 +416,7 @@ main() {
     
     # Get Gemini API key
     local gemini_key
-    gemini_key=$(get_or_request_key "GEMINI_API_KEY" \
-        "This server requires a Gemini API key for transcript processing.
-Get your key from: https://makersuite.google.com/app/apikey")
+    gemini_key=$(get_or_request_key)
     
     # Detect Python
     local python_cmd
@@ -491,11 +549,11 @@ Get your key from: https://makersuite.google.com/app/apikey")
         if [ $success_count -lt ${#clients[@]} ]; then
             echo ""
             log_warn "Some clients failed to configure. Check the errors above."
-        fi
+        }
     else
         log_error "Installation failed for all clients"
         exit 1
-    fi
+    }
 }
 
 # Create test script

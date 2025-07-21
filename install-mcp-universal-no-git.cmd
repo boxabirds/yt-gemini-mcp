@@ -3,7 +3,7 @@ REM YouTube Transcript MCP Server - Universal Installer Entry Point (Windows)
 REM This batch file detects and runs the appropriate installer
 REM
 REM Usage:
-REM   install-mcp-universal-no-git.cmd
+REM   install-mcp-universal-no-git.cmd [--force]
 
 REM Check if PowerShell is available
 where powershell >nul 2>nul
@@ -25,19 +25,24 @@ if %PS_MAJOR% LSS 5 (
 
 echo YouTube Transcript MCP Server Installer
 echo ======================================
+
 echo.
 echo This installer will:
 echo   1. Download the MCP server from GitHub
 echo   2. Configure it for your AI assistants
 echo   3. Set up your Gemini API key
 echo.
+
 echo Press any key to continue or Ctrl+C to cancel...
 pause >nul
 
 REM Download and run the PowerShell installer
 echo.
 echo Downloading installer...
-powershell -ExecutionPolicy Bypass -Command "& { iwr -useb 'https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.ps1' | iex }"
+set "FORCE_ARG="
+if /i "%1"=="--force" set "FORCE_ARG=-Force"
+
+powershell -ExecutionPolicy Bypass -Command "& { iwr -useb 'https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.ps1' | iex } -Force:$FORCE_ARG"
 
 if %errorlevel% neq 0 (
     echo.

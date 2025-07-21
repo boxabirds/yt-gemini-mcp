@@ -14,7 +14,8 @@
 #Requires -Version 5.0
 
 param(
-    [string]$RepoBase = "https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main"
+    [string]$RepoBase = "https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main",
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -160,67 +161,120 @@ function Initialize-InstallerDirectory {
     }
 }
 
+# Store API key in the central keys.json file
+function Store-Key {
+    param(
+        [string]$KeyName,
+        [string]$KeyValue
+    )
+    Initialize-InstallerDirectory
+
+    $keys = if (Test-Path $KEYS_FILE) {
+        try {
+            Get-Content $KEYS_FILE -Raw | ConvertFrom-Json
+        } catch {
+            @{ }
+        }
+    } else {
+        @{ }
+    }
+
+    if ($keys -isnot [PSCustomObject]) {
+        $keys = [PSCustomObject]@{ }
+    }
+
+    $keys | Add-Member -NotePropertyName $KeyName -NotePropertyValue $KeyValue -Force
+    $keys | ConvertTo-Json | Set-Content $KEYS_FILE -Encoding UTF8
+
+    # Set file permissions (restrict to current user)
+    try {
+        $acl = Get-Acl $KEYS_FILE
+        $acl.SetAccessRuleProtection($true, $false)
+        $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            [System.Security.Principal.WindowsIdentity]::GetCurrent().Name,
+            "FullControl",
+            "Allow"
+        )
+        $acl.SetAccessRule($accessRule)
+        Set-Acl $KEYS_FILE $acl
+    } catch {
+        Write-Warning "Could not set permissions on $KEYS_FILE. Key may be readable by other users."
+    }
+}
+
 # Get or request API key
 function Get-OrRequestKey {
     param(
-        [string]$KeyName,
-        [string]$Prompt
+        [string]$KeyName
     )
     
     Initialize-InstallerDirectory
     
-    # Check if key already exists
-    if (Test-Path $KEYS_FILE) {
-        try {
-            $keys = Get-Content $KEYS_FILE | ConvertFrom-Json
-            if ($keys.$KeyName) {
-                return $keys.$KeyName
+    # Check for existing key if --force is not used
+    if (-not $Force) {
+        # Check our own cache first
+        if (Test-Path $KEYS_FILE) {
+            try {
+                $keys = Get-Content $KEYS_FILE | ConvertFrom-Json
+                if ($keys.$KeyName) {
+                    return $keys.$KeyName
+                }
+            } catch { }
+        }
+
+        # Check client configurations for existing key
+        $clients = Get-InstalledClients
+        foreach ($client in $clients) {
+            $configPath = $null
+            switch ($client) {
+                "gemini" { $configPath = Join-Path $env:USERPROFILE ".gemini\settings.json" }
+                "windsurf" {
+                    if (Test-Path "$env:LOCALAPPDATA\Windsurf") {
+                        $configPath = Join-Path $env:LOCALAPPDATA "Windsurf\mcp_config.json"
+                    } elseif (Test-Path "$env:USERPROFILE\.config\Windsurf") {
+                        $configPath = Join-Path $env:USERPROFILE ".config\Windsurf\mcp_config.json"
+                    } else {
+                        $configPath = Join-Path $env:APPDATA "Codeium\Windsurf\mcp_config.json"
+                    }
+                }
+                "cursor" { $configPath = Join-Path $env:USERPROFILE ".cursor\mcp.json" }
             }
-        } catch {
-            # Continue to request new key
+
+            if ($configPath -and (Test-Path $configPath)) {
+                try {
+                    $config = Get-Content $configPath -Raw | ConvertFrom-Json
+                    $foundKey = $config.mcpServers."youtube-transcript".env.$KeyName
+                    if ($foundKey) {
+                        Write-Success "Found existing Gemini API key in $client configuration"
+                        Write-Host "(Use --force to enter a new key)"
+                        Store-Key -KeyName $KeyName -KeyValue $foundKey
+                        return $foundKey
+                    }
+                } catch { }
+            }
         }
     }
     
     # Request key from user
-    Write-Host $Prompt
-    $keyValue = Read-Host "Enter $KeyName"
+    Write-Host ""
+    Write-Warning "Setting up Gemini API key for MCP server"
+    Write-Host ""
+    Write-Host "This MCP server needs its own Gemini API key that will be stored"
+    Write-Host "in a local configuration file. This allows you to:"
+    Write-Host "  • Manage this key separately from your shell environment"
+    Write-Host "  • Revoke access without affecting other applications"
+    Write-Host "  • Track usage specifically for YouTube video analysis"
+    Write-Host ""
+    Write-Host "Get your API key at: https://aistudio.google.com/apikey"
+    Write-Host ""
+    $keyValue = Read-Host "Enter your Gemini API key"
     
-    # Validate key is not empty
     if ([string]::IsNullOrWhiteSpace($keyValue)) {
         Write-Error "API key cannot be empty"
         exit 1
     }
     
-    # Store key
-    $keys = if (Test-Path $KEYS_FILE) {
-        try {
-            Get-Content $KEYS_FILE -Raw | ConvertFrom-Json
-        } catch {
-            @{}
-        }
-    } else {
-        @{}
-    }
-    
-    # Ensure keys is a proper object
-    if ($keys -isnot [PSCustomObject]) {
-        $keys = [PSCustomObject]@{}
-    }
-    
-    $keys | Add-Member -NotePropertyName $KeyName -NotePropertyValue $keyValue -Force
-    $keys | ConvertTo-Json | Set-Content $KEYS_FILE -Encoding UTF8
-    
-    # Set file permissions (restrict to current user)
-    $acl = Get-Acl $KEYS_FILE
-    $acl.SetAccessRuleProtection($true, $false)
-    $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-        [System.Security.Principal.WindowsIdentity]::GetCurrent().Name,
-        "FullControl",
-        "Allow"
-    )
-    $acl.SetAccessRule($accessRule)
-    Set-Acl $KEYS_FILE $acl
-    
+    Store-Key -KeyName $KeyName -KeyValue $keyValue
     return $keyValue
 }
 
@@ -432,10 +486,7 @@ function Install-Main {
     Test-Dependencies
     
     # Get Gemini API key
-    $geminiKey = Get-OrRequestKey -KeyName "GEMINI_API_KEY" -Prompt @"
-This server requires a Gemini API key for transcript processing.
-Get your key from: https://makersuite.google.com/app/apikey
-"@
+    $geminiKey = Get-OrRequestKey -KeyName "GEMINI_API_KEY"
     
     # Detect Python
     $pythonCmd = Get-PythonCommand

@@ -57,6 +57,94 @@ sequenceDiagram
     end
 ```
 
+# v1.1
+```mermaid
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#2563eb',
+    'primaryTextColor': '#000000ff',
+    'primaryBorderColor': '#1e40af',
+    'lineColor': '#3b82f6',
+    'secondaryColor': '#7c3aed',
+    'tertiaryColor': '#10b981',
+    'background': '#000000ff',
+    'mainBkg': '#0f0000ff',
+    'secondBkg': '#000204ff',
+    'actorTextColor': '#1e293b',
+    'actorBkg': '#e0e7ff',
+    'actorBorder': '#6366f1',
+    'activationBorderColor': '#3b82f6',
+    'activationBkgColor': '#dbeafe',
+    'sequenceNumberColor': '#000000ff',
+    'noteBkgColor': '#fef3c7',
+    'noteBorderColor': '#f59e0b'
+  }
+}}%%
+
+sequenceDiagram
+    autonumber
+    participant Client as 🧠 MCP Client<br/>(e.g. Claude, Cursor)
+    participant Config as 📁 Local Config<br/>Launch Logic
+    participant Server as 🛠️ MCP Server<br/>(tool backend)
+
+    rect rgb(239, 246, 255)
+        note over Client,Config: Discovery or Launch Phase
+        Client->>Config: Resolve MCP tool config or launch command
+        alt Preconfigured path
+            Config-->>Client: Return server path or pipe info
+        else Dynamic launch
+            Config->>Server: Start server process (e.g. subprocess, shell)
+            Server->>Server: Init FastMCP / run loop
+        end
+    end
+
+    rect rgb(237, 242, 255)
+        note over Client,Server: Connection Phase
+        Client->>Server: Connect via transport (stdio, HTTP, socket)
+        activate Server
+        Server-->>Client: Acknowledge + advertise capabilities
+        deactivate Server
+    end
+
+    rect rgb(236, 253, 245)
+        note over Client,Server: Context & Tool Setup
+        Client->>Server: Send project context / working set
+        activate Server
+        Server-->>Client: Accept + optionally transform or enhance context
+        deactivate Server
+        
+        Client->>Server: List available tools / methods
+        activate Server
+        Server-->>Client: Return list (e.g. format_code, test_code)
+        deactivate Server
+    end
+
+    rect rgb(254, 243, 199)
+        note over Client,Server: Execution Phase
+        Client->>Server: Call method with arguments
+        activate Server
+        Server->>Server: Execute tool logic
+        Server-->>Client: Return result (stdout, json, logs)
+        deactivate Server
+    end
+
+    rect rgb(254, 226, 226)
+        note over Client,Server: Optional Streaming
+        Client->>Server: Subscribe to updates or long-running tasks
+        activate Server
+        Server-->>Client: Stream logs / progress
+        deactivate Server
+    end
+
+    rect rgb(229, 231, 235)
+        note over Client,Server: Termination
+        Client->>Server: Disconnect or terminate session
+        activate Server
+        Server-->>Client: Acknowledge and shutdown if needed
+        deactivate Server
+    end
+```
 ---
 
 ## Slide 2: YouTube Analysis Flow
