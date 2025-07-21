@@ -136,8 +136,14 @@ detect_clients() {
         detected_clients+=("gemini")
     fi
     
+    # Check for Claude CLI (Claude Code)
     if command -v claude &> /dev/null; then
-        detected_clients+=("claude")
+        detected_clients+=("claude-cli")
+    fi
+    
+    # Check for Claude Desktop on macOS
+    if [ -d "/Applications/Claude.app" ] || [ -d "$HOME/Applications/Claude.app" ]; then
+        detected_clients+=("claude-desktop")
     fi
     
     if [ -d "$HOME/.codeium/windsurf" ] || \
@@ -417,7 +423,8 @@ main() {
         echo ""
         echo "Supported clients:"
         echo "  - Gemini CLI"
-        echo "  - Claude Code"
+        echo "  - Claude Code (CLI)"
+        echo "  - Claude Desktop"
         echo "  - Windsurf"
         echo "  - Cursor"
         exit 1
@@ -451,8 +458,27 @@ main() {
                 fi
                 ;;
                 
-            "claude")
+            "claude-cli")
                 if install_claude "youtube-transcript" "$python_cmd" "[\"$server_script\"]" "{\"GEMINI_API_KEY\": \"$gemini_key\"}"; then
+                    ((success_count++))
+                fi
+                ;;
+                
+            "claude-desktop")
+                local config_path="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+                local server_config
+                server_config=$(jq -n \
+                    --arg cmd "$python_cmd" \
+                    --arg script "$server_script" \
+                    --arg key "$gemini_key" \
+                    '{
+                        command: $cmd,
+                        args: [$script],
+                        env: {
+                            GEMINI_API_KEY: $key
+                        }
+                    }')
+                if install_json_client "$client" "$config_path" "youtube-transcript" "$server_config"; then
                     ((success_count++))
                 fi
                 ;;
