@@ -19,7 +19,6 @@ REPO_BASE="https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main"
 SERVER_URL="$REPO_BASE/youtube_transcript_server_fastmcp.py"
 INSTALLER_VERSION="1.0.0"
 INSTALLER_DIR="$HOME/.mcp-installer"
-KEYS_FILE="$INSTALLER_DIR/keys.json"
 SERVERS_DIR="$INSTALLER_DIR/servers"
 
 # Colors
@@ -159,56 +158,30 @@ detect_clients() {
     fi
 }
 
-# Get or request API key
-get_or_request_key() {
+# Request API key from user
+request_api_key() {
     local key_name="$1"
     local prompt="$2"
-    
-    mkdir -p "$INSTALLER_DIR"
-    
-    # Check if key already exists
-    if [ -f "$KEYS_FILE" ]; then
-        local existing_key
-        existing_key=$(jq -r ".$key_name // empty" "$KEYS_FILE" 2>/dev/null || echo "")
-        if [ -n "$existing_key" ]; then
-            echo "$existing_key"
-            return
-        fi
-    fi
+    local key_value=""
     
     # Request key from user
-    echo ""
-    echo "$prompt"
-    echo ""
+    if [ -n "$prompt" ]; then
+        echo ""
+        echo "$prompt"
+        echo ""
+    fi
     
     # Ensure we read from the controlling terminal, not stdin
     if [ -t 0 ]; then
-        read -r -p "Enter $key_name: " key_value
+        read -r -p "Enter your Gemini API key: " key_value
     else
-        read -r -p "Enter $key_name: " key_value < /dev/tty
+        read -r -p "Enter your Gemini API key: " key_value < /dev/tty
     fi
     
     if [ -z "$key_value" ]; then
         log_error "API key cannot be empty"
         exit 1
     fi
-    
-    # Store key
-    local temp_file
-    temp_file=$(mktemp)
-    
-    if [ -f "$KEYS_FILE" ]; then
-        jq --arg key "$key_name" --arg value "$key_value" '
-            .[$key] = $value
-        ' "$KEYS_FILE" > "$temp_file"
-    else
-        jq -n --arg key "$key_name" --arg value "$key_value" '
-            {($key): $value}
-        ' > "$temp_file"
-    fi
-    
-    mv "$temp_file" "$KEYS_FILE"
-    chmod 600 "$KEYS_FILE"
     
     echo "$key_value"
 }
@@ -363,10 +336,18 @@ main() {
     check_dependencies
     
     # Get Gemini API key
+    echo "📝 Setting up Gemini API key for MCP server"
+    echo ""
+    echo "This MCP server needs its own Gemini API key that will be stored"
+    echo "in each AI assistant's configuration. This allows you to:"
+    echo "  • Manage this key separately from your shell environment"
+    echo "  • Revoke access without affecting other applications"
+    echo "  • Track usage specifically for YouTube video analysis"
+    echo ""
+    echo "Get your API key at: https://aistudio.google.com/apikey"
+    
     local gemini_key
-    gemini_key=$(get_or_request_key "GEMINI_API_KEY" \
-        "This server requires a Gemini API key for transcript processing.
-Get your key from: https://makersuite.google.com/app/apikey")
+    gemini_key=$(request_api_key "GEMINI_API_KEY" "")
     
     # Detect Python
     local python_cmd
