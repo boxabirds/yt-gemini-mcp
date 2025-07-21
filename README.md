@@ -32,27 +32,27 @@ These installers download the server directly without requiring git:
 
 curl
 ```bash
-curl -sSL https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.sh | bash
+curl -sSL https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main/install-mcp-universal-no-git.sh | bash
 ```
 
 wget
 ```bash
 
-wget -qO- https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.sh | bash
+wget -qO- https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main/install-mcp-universal-no-git.sh | bash
 ```
 
 #### Windows (PowerShell)
 
 ```powershell
 # Quick install
-iwr -useb https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main/install-mcp-universal-no-git.ps1 | iex
 ```
 
 #### Windows (Command Prompt)
 
 ```cmd
 # Download and run the batch file
-curl -O https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.cmd
+curl -O https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main/install-mcp-universal-no-git.cmd
 install-mcp-universal-no-git.cmd
 ```
 
