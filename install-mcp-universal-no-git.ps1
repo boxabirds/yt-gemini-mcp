@@ -179,7 +179,12 @@ function Request-ApiKey {
     Write-Host ""
     Write-Host "Get your API key at: https://aistudio.google.com/apikey" -ForegroundColor Cyan
     Write-Host ""
-    $keyValue = Read-Host "Enter your Gemini API key"
+    $keyValue = Read-Host "Enter your Gemini API key" -AsSecureString
+    
+    # Convert SecureString back to plain text
+    $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($keyValue)
+    $keyValue = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
     
     if ([string]::IsNullOrWhiteSpace($keyValue)) {
         Write-Error "API key cannot be empty"

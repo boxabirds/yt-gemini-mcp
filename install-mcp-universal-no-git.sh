@@ -186,11 +186,14 @@ request_api_key() {
     fi
     
     # Ensure we read from the controlling terminal, not stdin
+    # Use -s flag to hide input (like password)
+    echo -n "Enter your Gemini API key: "
     if [ -t 0 ]; then
-        read -r -p "Enter your Gemini API key: " key_value
+        read -r -s key_value
     else
-        read -r -p "Enter your Gemini API key: " key_value < /dev/tty
+        read -r -s key_value < /dev/tty
     fi
+    echo  # Add newline after hidden input
     
     if [ -z "$key_value" ]; then
         log_error "API key cannot be empty"

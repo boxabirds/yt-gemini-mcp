@@ -57,7 +57,9 @@ else
     echo
     echo "Get your API key at: https://aistudio.google.com/apikey"
     echo
-    read -p "Enter your Gemini API key: " GEMINI_API_KEY
+    echo -n "Enter your Gemini API key: "
+    read -s GEMINI_API_KEY
+    echo  # Add newline after hidden input
     
     if [[ -z "$GEMINI_API_KEY" ]]; then
         echo "❌ Error: API key cannot be empty"
