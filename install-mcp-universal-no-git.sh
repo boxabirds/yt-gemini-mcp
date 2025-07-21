@@ -498,13 +498,13 @@ main() {
                             GEMINI_API_KEY: $key
                         }
                     }')
-                if install_json_client "$client" "$config_path" "youtube-transcript" "$server_config"; then
+                if install_json_client "$client" "$config_path" "ask-youtube" "$server_config"; then
                     ((success_count++))
                 fi
                 ;;
                 
             "claude-cli")
-                if install_claude "youtube-transcript" "$venv_python" "[\"$server_script\"]" "{\"GEMINI_API_KEY\": \"$gemini_key\"}"; then
+                if install_claude "ask-youtube" "$venv_python" "[\"$server_script\"]" "{\"GEMINI_API_KEY\": \"$gemini_key\"}"; then
                     ((success_count++))
                 fi
                 ;;
@@ -523,7 +523,7 @@ main() {
                             GEMINI_API_KEY: $key
                         }
                     }')
-                if install_json_client "$client" "$config_path" "youtube-transcript" "$server_config"; then
+                if install_json_client "$client" "$config_path" "ask-youtube" "$server_config"; then
                     ((success_count++))
                 fi
                 ;;
@@ -550,7 +550,7 @@ main() {
                             GEMINI_API_KEY: $key
                         }
                     }')
-                if install_json_client "$client" "$config_path" "youtube-transcript" "$server_config"; then
+                if install_json_client "$client" "$config_path" "ask-youtube" "$server_config"; then
                     ((success_count++))
                 fi
                 ;;
@@ -569,7 +569,7 @@ main() {
                             GEMINI_API_KEY: $key
                         }
                     }')
-                if install_json_client "$client" "$config_path" "youtube-transcript" "$server_config"; then
+                if install_json_client "$client" "$config_path" "ask-youtube" "$server_config"; then
                     ((success_count++))
                 fi
                 ;;
@@ -585,7 +585,7 @@ main() {
         echo ""
         echo "Next steps:"
         echo "1. Restart any running AI assistant applications"
-        echo "2. The server will be available as 'youtube-transcript' in configured clients"
+        echo "2. The server will be available as 'ask-youtube' in configured clients"
         echo "3. Test the server with: $INSTALLER_DIR/test-server.sh"
         
         if [ $success_count -lt ${#clients[@]} ]; then

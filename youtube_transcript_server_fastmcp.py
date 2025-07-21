@@ -22,7 +22,7 @@ def setup_logging(
 ) -> logging.Logger:
     """Set up logging configuration."""
     # Create logger
-    logger = logging.getLogger("ask-youtube-transcript")
+    logger = logging.getLogger("ask-youtube")
     logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
     
     # Remove existing handlers
@@ -69,7 +69,7 @@ log_file = os.getenv("YOUTUBE_TRANSCRIPT_LOG_FILE")
 log_dir = os.getenv("YOUTUBE_TRANSCRIPT_LOG_DIR", os.path.expanduser("~/Library/Application Support/Claude/MCP/logs"))
 logger = setup_logging(log_level, log_file, log_dir)
 
-logger.info("Starting ask-youtube-transcript MCP server")
+logger.info("Starting ask-youtube MCP server")
 logger.info(f"Python: {sys.executable}")
 logger.info(f"Version: {sys.version}")
 logger.info(f"CWD: {os.getcwd()}")
@@ -77,7 +77,7 @@ logger.info(f"GEMINI_API_KEY: {'SET' if os.environ.get('GEMINI_API_KEY') else 'N
 
 # Create MCP server
 mcp = FastMCP(
-    name="ask-youtube-transcript",
+    name="ask-youtube",
     version="1.0.0",
     description="Analyze YouTube videos using Gemini API"
 )

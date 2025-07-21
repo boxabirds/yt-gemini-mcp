@@ -102,7 +102,7 @@ install-mcp-universal.cmd
 
 ## Usage
 
-Once installed, the server will be available in your AI assistant as `youtube-transcript`.
+Once installed, the server will be available in your AI assistant as `ask-youtube`.
 
 ### In Claude Code
 
@@ -111,7 +111,7 @@ Can you analyze this YouTube video about Python async programming?
 https://www.youtube.com/watch?v=example123
 ```
 
-Claude will automatically use the youtube-transcript server to fetch and analyze the video content.
+Claude will automatically use the ask-youtube server to fetch and analyze the video content.
 
 ### Available Commands
 
@@ -125,7 +125,12 @@ The server provides these MCP tools to your AI assistant:
 
 After installation, you can test the server:
 
-#### macOS/Linux
+#### macOS
+```bash
+~/Library/Application\ Support/YouTube-Transcript-MCP/test-server.sh
+```
+
+#### Linux
 ```bash
 ~/.mcp-installer/test-server.sh
 ```
@@ -140,11 +145,13 @@ After installation, you can test the server:
 The installer creates files in these locations:
 
 - **Server files**: 
-  - macOS/Linux: `~/.mcp-installer/servers/`
+  - macOS: `~/Library/Application Support/YouTube-Transcript-MCP/servers/`
+  - Linux: `~/.mcp-installer/servers/`
   - Windows: `%LOCALAPPDATA%\.mcp-installer\servers\`
-- **API Keys**: 
-  - macOS/Linux: `~/.mcp-installer/keys.json`
-  - Windows: `%LOCALAPPDATA%\.mcp-installer\keys.json`
+- **Virtual Environment**: 
+  - macOS: `~/Library/Application Support/YouTube-Transcript-MCP/venv/`
+  - Linux: `~/.mcp-installer/venv/`
+  - Windows: `%LOCALAPPDATA%\.mcp-installer\venv\`
 - **Client Configurations**:
   - Claude Code: Managed by `claude mcp add` command
   - Cursor: `~/.cursor/mcp.json` or `%USERPROFILE%\.cursor\mcp.json`

@@ -392,13 +392,13 @@ Get your key from: https://makersuite.google.com/app/apikey")
                             GEMINI_API_KEY: $key
                         }
                     }')
-                if install_json_client "$client" "$config_path" "youtube-transcript" "$server_config"; then
+                if install_json_client "$client" "$config_path" "ask-youtube" "$server_config"; then
                     ((success_count++))
                 fi
                 ;;
                 
             "claude")
-                if install_claude "youtube-transcript" "$python_cmd" "[\"$server_script\"]" "{\"GEMINI_API_KEY\": \"$gemini_key\"}"; then
+                if install_claude "ask-youtube" "$python_cmd" "[\"$server_script\"]" "{\"GEMINI_API_KEY\": \"$gemini_key\"}"; then
                     ((success_count++))
                 fi
                 ;;
@@ -425,7 +425,7 @@ Get your key from: https://makersuite.google.com/app/apikey")
                             GEMINI_API_KEY: $key
                         }
                     }')
-                if install_json_client "$client" "$config_path" "youtube-transcript" "$server_config"; then
+                if install_json_client "$client" "$config_path" "ask-youtube" "$server_config"; then
                     ((success_count++))
                 fi
                 ;;
@@ -444,7 +444,7 @@ Get your key from: https://makersuite.google.com/app/apikey")
                             GEMINI_API_KEY: $key
                         }
                     }')
-                if install_json_client "$client" "$config_path" "youtube-transcript" "$server_config"; then
+                if install_json_client "$client" "$config_path" "ask-youtube" "$server_config"; then
                     ((success_count++))
                 fi
                 ;;
@@ -460,7 +460,7 @@ Get your key from: https://makersuite.google.com/app/apikey")
         echo ""
         echo "Next steps:"
         echo "1. Restart any running AI assistant applications"
-        echo "2. The server will be available as 'youtube-transcript' in configured clients"
+        echo "2. The server will be available as 'ask-youtube' in configured clients"
         echo "3. Test the server with: $INSTALLER_DIR/test-server.sh"
         
         if [ $success_count -lt ${#clients[@]} ]; then

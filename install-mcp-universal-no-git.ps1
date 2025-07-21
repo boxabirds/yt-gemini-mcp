@@ -541,11 +541,11 @@ function Install-Main {
                     }
                 }
                 Install-JsonClient -Client $client -ConfigPath $configPath `
-                    -ServerName "youtube-transcript" -ServerConfig $serverConfig
+                    -ServerName "ask-youtube" -ServerConfig $serverConfig
             }
             
             "claude" {
-                Install-Claude -ServerName "youtube-transcript" -Command $venvPython `
+                Install-Claude -ServerName "ask-youtube" -Command $venvPython `
                     -Args @($serverScript) -Env @{ GEMINI_API_KEY = $geminiKey }
             }
             
@@ -566,7 +566,7 @@ function Install-Main {
                     }
                 }
                 Install-JsonClient -Client $client -ConfigPath $configPath `
-                    -ServerName "youtube-transcript" -ServerConfig $serverConfig
+                    -ServerName "ask-youtube" -ServerConfig $serverConfig
             }
             
             "cursor" {
@@ -579,7 +579,7 @@ function Install-Main {
                     }
                 }
                 Install-JsonClient -Client $client -ConfigPath $configPath `
-                    -ServerName "youtube-transcript" -ServerConfig $serverConfig
+                    -ServerName "ask-youtube" -ServerConfig $serverConfig
             }
         }
         
@@ -597,7 +597,7 @@ function Install-Main {
         Write-Host ""
         Write-Host "Next steps:"
         Write-Host "1. Restart any running AI assistant applications"
-        Write-Host "2. The server will be available as 'youtube-transcript' in configured clients"
+        Write-Host "2. The server will be available as 'ask-youtube' in configured clients"
         Write-Host "3. Test the server with: $INSTALLER_DIR\test-server.cmd"
         
         if ($successCount -lt $clients.Count) {

@@ -34,7 +34,7 @@ import sys
 try:
     with open('$CONFIG_FILE', 'r') as f:
         config = json.load(f)
-        key = config.get('mcpServers', {}).get('ask-youtube-transcript', {}).get('env', {}).get('GEMINI_API_KEY', '')
+        key = config.get('mcpServers', {}).get('ask-youtube', {}).get('env', {}).get('GEMINI_API_KEY', '')
         print(key)
 except:
     print('')
@@ -115,7 +115,7 @@ if 'mcpServers' not in config:
     config['mcpServers'] = {}
 
 # Add or update our server configuration
-config['mcpServers']['ask-youtube-transcript'] = {
+config['mcpServers']['ask-youtube'] = {
     "command": "$VENV_DIR/bin/python",
     "args": [
         "$MCP_DIR/$SERVER_SCRIPT"
@@ -137,7 +137,7 @@ echo "✅ Installation complete!"
 echo
 echo "Next steps:"
 echo "1. Restart Claude Desktop to load the MCP server"
-echo "2. Look for 'ask-youtube-transcript' in the tool list"
+echo "2. Look for 'ask-youtube' in the tool list"
 echo "3. Use the 'analyze_youtube' tool to analyze videos"
 echo
 echo "To view logs, run: ./view_logs.sh"
