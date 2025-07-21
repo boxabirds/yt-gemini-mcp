@@ -198,7 +198,14 @@ install_json_client() {
     local temp_file
     temp_file=$(mktemp)
     
+    local file_status="new"
+    local existing_server=""
+    
     if [ -f "$config_path" ]; then
+        file_status="updated"
+        # Check if server already exists
+        existing_server=$(jq -r --arg name "$server_name" '.mcpServers[$name] // empty' "$config_path" 2>/dev/null || echo "")
+        
         # Update existing config
         jq --argjson server_config "$server_config" \
            --arg server_name "$server_name" \
@@ -213,7 +220,12 @@ install_json_client() {
     
     if jq empty "$temp_file" 2>/dev/null; then
         mv "$temp_file" "$config_path"
-        log_info "Installed $server_name for $client"
+        if [ -n "$existing_server" ]; then
+            log_info "Updated existing $server_name for $client"
+        else
+            log_info "Installed $server_name for $client"
+        fi
+        echo "  📄 Config file: $config_path ($file_status)"
     else
         rm -f "$temp_file"
         log_error "Failed to create valid JSON configuration for $client"
@@ -227,6 +239,10 @@ install_claude() {
     local command="$2"
     local args_json="$3"
     local env_json="$4"
+    
+    # Check if server already exists
+    local existing_server=""
+    existing_server=$(claude mcp list 2>/dev/null | grep -E "^$server_name\s" || echo "")
     
     local -a cmd=("claude" "mcp" "add" "$server_name" "-s" "user")
     
@@ -254,7 +270,23 @@ install_claude() {
     fi
     
     if eval "$env_cmd" "${cmd[@]}" 2>/dev/null; then
-        log_info "Installed $server_name for Claude Code"
+        if [ -n "$existing_server" ]; then
+            log_info "Updated existing $server_name for Claude Code"
+        else
+            log_info "Installed $server_name for Claude Code"
+        fi
+        # Claude stores configs in platform-specific locations
+        local config_locations=(
+            "$HOME/Library/Application Support/Code - Insiders/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
+            "$HOME/.config/Code - Insiders/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
+            "$HOME/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
+        )
+        for loc in "${config_locations[@]}"; do
+            if [ -f "$loc" ]; then
+                echo "  📄 Config file: $loc"
+                break
+            fi
+        done
         return 0
     else
         log_error "Failed to install for Claude Code"
@@ -360,7 +392,15 @@ main() {
     # Download server
     log_info "Downloading MCP server..."
     local server_script="$SERVERS_DIR/youtube_transcript_server.py"
+    
+    # Check if server already exists
+    local server_status="new"
+    if [ -f "$server_script" ]; then
+        server_status="updated"
+    fi
+    
     download_and_install_server "$SERVER_URL" "$server_script"
+    echo "  📄 Server script: $server_script ($server_status)"
     
     # Install Python dependencies
     install_python_deps "$python_cmd"

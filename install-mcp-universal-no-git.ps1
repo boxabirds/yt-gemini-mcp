@@ -14,7 +14,7 @@
 #Requires -Version 5.0
 
 param(
-    [string]$RepoBase = "https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main",
+    [string]$RepoBase = "https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main",
     [switch]$Force
 )
 
@@ -25,7 +25,6 @@ $ProgressPreference = "SilentlyContinue"
 $SERVER_URL = "$RepoBase/youtube_transcript_server_fastmcp.py"
 $INSTALLER_VERSION = "1.0.0"
 $INSTALLER_DIR = "$env:LOCALAPPDATA\.mcp-installer"
-$KEYS_FILE = "$INSTALLER_DIR\keys.json"
 $SERVERS_DIR = "$INSTALLER_DIR\servers"
 
 # Logging functions
@@ -161,111 +160,24 @@ function Initialize-InstallerDirectory {
     }
 }
 
-# Store API key in the central keys.json file
-function Store-Key {
-    param(
-        [string]$KeyName,
-        [string]$KeyValue
-    )
-    Initialize-InstallerDirectory
-
-    $keys = if (Test-Path $KEYS_FILE) {
-        try {
-            Get-Content $KEYS_FILE -Raw | ConvertFrom-Json
-        } catch {
-            @{ }
-        }
-    } else {
-        @{ }
-    }
-
-    if ($keys -isnot [PSCustomObject]) {
-        $keys = [PSCustomObject]@{ }
-    }
-
-    $keys | Add-Member -NotePropertyName $KeyName -NotePropertyValue $KeyValue -Force
-    $keys | ConvertTo-Json | Set-Content $KEYS_FILE -Encoding UTF8
-
-    # Set file permissions (restrict to current user)
-    try {
-        $acl = Get-Acl $KEYS_FILE
-        $acl.SetAccessRuleProtection($true, $false)
-        $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-            [System.Security.Principal.WindowsIdentity]::GetCurrent().Name,
-            "FullControl",
-            "Allow"
-        )
-        $acl.SetAccessRule($accessRule)
-        Set-Acl $KEYS_FILE $acl
-    } catch {
-        Write-Warning "Could not set permissions on $KEYS_FILE. Key may be readable by other users."
-    }
-}
 
 # Get or request API key
-function Get-OrRequestKey {
+function Request-ApiKey {
     param(
         [string]$KeyName
     )
     
-    Initialize-InstallerDirectory
-    
-    # Check for existing key if --force is not used
-    if (-not $Force) {
-        # Check our own cache first
-        if (Test-Path $KEYS_FILE) {
-            try {
-                $keys = Get-Content $KEYS_FILE | ConvertFrom-Json
-                if ($keys.$KeyName) {
-                    return $keys.$KeyName
-                }
-            } catch { }
-        }
-
-        # Check client configurations for existing key
-        $clients = Get-InstalledClients
-        foreach ($client in $clients) {
-            $configPath = $null
-            switch ($client) {
-                "gemini" { $configPath = Join-Path $env:USERPROFILE ".gemini\settings.json" }
-                "windsurf" {
-                    if (Test-Path "$env:LOCALAPPDATA\Windsurf") {
-                        $configPath = Join-Path $env:LOCALAPPDATA "Windsurf\mcp_config.json"
-                    } elseif (Test-Path "$env:USERPROFILE\.config\Windsurf") {
-                        $configPath = Join-Path $env:USERPROFILE ".config\Windsurf\mcp_config.json"
-                    } else {
-                        $configPath = Join-Path $env:APPDATA "Codeium\Windsurf\mcp_config.json"
-                    }
-                }
-                "cursor" { $configPath = Join-Path $env:USERPROFILE ".cursor\mcp.json" }
-            }
-
-            if ($configPath -and (Test-Path $configPath)) {
-                try {
-                    $config = Get-Content $configPath -Raw | ConvertFrom-Json
-                    $foundKey = $config.mcpServers."youtube-transcript".env.$KeyName
-                    if ($foundKey) {
-                        Write-Success "Found existing Gemini API key in $client configuration"
-                        Write-Host "(Use --force to enter a new key)"
-                        Store-Key -KeyName $KeyName -KeyValue $foundKey
-                        return $foundKey
-                    }
-                } catch { }
-            }
-        }
-    }
-    
-    # Request key from user
+    # Always prompt for key
     Write-Host ""
-    Write-Warning "Setting up Gemini API key for MCP server"
+    Write-Host "📝 Setting up Gemini API key for MCP server" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "This MCP server needs its own Gemini API key that will be stored"
-    Write-Host "in a local configuration file. This allows you to:"
+    Write-Host "in each AI assistant's configuration. This allows you to:"
     Write-Host "  • Manage this key separately from your shell environment"
     Write-Host "  • Revoke access without affecting other applications"
     Write-Host "  • Track usage specifically for YouTube video analysis"
     Write-Host ""
-    Write-Host "Get your API key at: https://aistudio.google.com/apikey"
+    Write-Host "Get your API key at: https://aistudio.google.com/apikey" -ForegroundColor Cyan
     Write-Host ""
     $keyValue = Read-Host "Enter your Gemini API key"
     
@@ -274,7 +186,6 @@ function Get-OrRequestKey {
         exit 1
     }
     
-    Store-Key -KeyName $KeyName -KeyValue $keyValue
     return $keyValue
 }
 
@@ -293,10 +204,19 @@ function Install-JsonClient {
         New-Item -ItemType Directory -Path $configDir -Force | Out-Null
     }
     
+    $fileStatus = "new"
+    $existingServer = $false
+    
     # Load or create configuration
     $config = if (Test-Path $ConfigPath) {
+        $fileStatus = "updated"
         try {
-            Get-Content $ConfigPath -Raw | ConvertFrom-Json
+            $loadedConfig = Get-Content $ConfigPath -Raw | ConvertFrom-Json
+            # Check if server already exists
+            if ($loadedConfig.mcpServers -and $loadedConfig.mcpServers.$ServerName) {
+                $existingServer = $true
+            }
+            $loadedConfig
         } catch {
             Write-Warning "Existing config is invalid, creating new one"
             [PSCustomObject]@{ mcpServers = @{} }
@@ -316,7 +236,12 @@ function Install-JsonClient {
     # Save configuration with proper formatting
     try {
         $config | ConvertTo-Json -Depth 10 | Set-Content $ConfigPath -Encoding UTF8
-        Write-Success "Installed $ServerName for $Client"
+        if ($existingServer) {
+            Write-Success "Updated existing $ServerName for $Client"
+        } else {
+            Write-Success "Installed $ServerName for $Client"
+        }
+        Write-Host "  📄 Config file: $ConfigPath ($fileStatus)" -ForegroundColor Gray
         return $true
     } catch {
         Write-Error "Failed to save configuration for $Client`: $_"
@@ -332,6 +257,15 @@ function Install-Claude {
         [string[]]$Args,
         [hashtable]$Env
     )
+    
+    # Check if server already exists
+    $existingServer = $false
+    try {
+        $existingServers = & claude mcp list 2>$null
+        if ($existingServers -match $ServerName) {
+            $existingServer = $true
+        }
+    } catch { }
     
     $cmd = @("claude", "mcp", "add", $ServerName, "-s", "user")
     
@@ -355,7 +289,27 @@ function Install-Claude {
         $success = $LASTEXITCODE -eq 0
         
         if ($success) {
-            Write-Success "Installed $ServerName for Claude Code"
+            if ($existingServer) {
+                Write-Success "Updated existing $ServerName for Claude Code"
+            } else {
+                Write-Success "Installed $ServerName for Claude Code"
+            }
+            
+            # Claude stores configs in platform-specific locations
+            $configLocations = @(
+                "$env:LOCALAPPDATA\Code - Insiders\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json",
+                "$env:LOCALAPPDATA\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json",
+                "$env:APPDATA\Code - Insiders\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json",
+                "$env:APPDATA\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json"
+            )
+            
+            foreach ($loc in $configLocations) {
+                if (Test-Path $loc) {
+                    Write-Host "  📄 Config file: $loc" -ForegroundColor Gray
+                    break
+                }
+            }
+            
             return $true
         } else {
             Write-Error "Claude command failed with exit code: $LASTEXITCODE"
@@ -486,7 +440,7 @@ function Install-Main {
     Test-Dependencies
     
     # Get Gemini API key
-    $geminiKey = Get-OrRequestKey -KeyName "GEMINI_API_KEY"
+    $geminiKey = Request-ApiKey -KeyName "GEMINI_API_KEY"
     
     # Detect Python
     $pythonCmd = Get-PythonCommand
@@ -497,7 +451,15 @@ function Install-Main {
     # Download server
     Write-Success "Downloading MCP server..."
     $serverScript = Join-Path $SERVERS_DIR "youtube_transcript_server.py"
+    
+    # Check if server already exists
+    $serverStatus = "new"
+    if (Test-Path $serverScript) {
+        $serverStatus = "updated"
+    }
+    
     Install-Server -ServerUrl $SERVER_URL -ServerPath $serverScript
+    Write-Host "  📄 Server script: $serverScript ($serverStatus)" -ForegroundColor Gray
     
     # Install Python dependencies
     Install-PythonDependencies -PythonCmd $pythonCmd
