@@ -18,7 +18,15 @@ set -euo pipefail
 REPO_BASE="https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main"
 SERVER_URL="$REPO_BASE/youtube_transcript_server_fastmcp.py"
 INSTALLER_VERSION="1.0.0"
-INSTALLER_DIR="$HOME/.mcp-installer"
+
+# Platform-specific installation directory
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS - use Application Support
+    INSTALLER_DIR="$HOME/Library/Application Support/YouTube-Transcript-MCP"
+else
+    # Linux/WSL - use hidden directory
+    INSTALLER_DIR="$HOME/.mcp-installer"
+fi
 SERVERS_DIR="$INSTALLER_DIR/servers"
 
 # Colors
