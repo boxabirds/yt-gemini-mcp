@@ -50,11 +50,17 @@ iwr -useb https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main/install
 
 #### Windows (Command Prompt)
 
+For the easiest experience, download both files:
 ```cmd
-# Download and run the batch file
+# Download the PowerShell installer and its wrapper
+curl -O https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main/install-mcp-universal-no-git.ps1
 curl -O https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main/install-mcp-universal-no-git.cmd
+
+# Run the installer
 install-mcp-universal-no-git.cmd
 ```
+
+Or use PowerShell directly as shown above.
 
 ### Option 2: GitHub Gist Installation
 
