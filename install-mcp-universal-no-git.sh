@@ -15,7 +15,7 @@
 set -euo pipefail
 
 # Configuration
-REPO_BASE="https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main"
+REPO_BASE="https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main"
 SERVER_URL="$REPO_BASE/youtube_transcript_server_fastmcp.py"
 INSTALLER_VERSION="1.0.0"
 INSTALLER_DIR="$HOME/.mcp-installer"
@@ -177,8 +177,16 @@ get_or_request_key() {
     fi
     
     # Request key from user
-    echo "$prompt" >&2
-    read -r -p "Enter $key_name: " key_value
+    echo ""
+    echo "$prompt"
+    echo ""
+    
+    # Ensure we read from the controlling terminal, not stdin
+    if [ -t 0 ]; then
+        read -r -p "Enter $key_name: " key_value
+    else
+        read -r -p "Enter $key_name: " key_value < /dev/tty
+    fi
     
     if [ -z "$key_value" ]; then
         log_error "API key cannot be empty"
@@ -290,8 +298,8 @@ download_and_install_server() {
     # Try multiple sources if the first fails
     local sources=(
         "$server_url"
-        "https://cdn.jsdelivr.net/gh/yourusername/yt-gemini-mcp@main/youtube_transcript_server_fastmcp.py"
-        "https://gitcdn.link/repo/yourusername/yt-gemini-mcp/main/youtube_transcript_server_fastmcp.py"
+        "https://cdn.jsdelivr.net/gh/boxabirds/yt-gemini-mcp@main/youtube_transcript_server_fastmcp.py"
+        "https://gitcdn.link/repo/boxabirds/yt-gemini-mcp/main/youtube_transcript_server_fastmcp.py"
     )
     
     local downloaded=false
