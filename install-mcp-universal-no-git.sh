@@ -240,7 +240,6 @@ get_or_request_key() {
                 fi
             fi
         done
-    fi
 
     # Prompt user for key
     echo
