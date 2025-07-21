@@ -18,7 +18,7 @@ A Model Context Protocol (MCP) server that enables AI coding assistants (Claude,
   - [Claude Code](https://claude.ai/code)
   - [Cursor](https://cursor.sh)
   - [Windsurf](https://codeium.com/windsurf)
-  - Gemini CLI
+  - [Gemini CLI](https://github.com/google-gemini/gemini-cli)
 
 The installer will automatically check for all dependencies and provide platform-specific installation instructions if anything is missing.
 
