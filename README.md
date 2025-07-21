@@ -12,7 +12,7 @@ A Model Context Protocol (MCP) server that enables AI coding assistants (Claude,
 
 ## Prerequisites
 
-- **Python 3.x** installed on your system
+- **Python 3.x** - The installer will check and provide installation instructions if missing
 - **Gemini API Key** from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - At least one supported AI assistant installed:
   - [Claude Code](https://claude.ai/code)
@@ -20,32 +20,61 @@ A Model Context Protocol (MCP) server that enables AI coding assistants (Claude,
   - [Windsurf](https://codeium.com/windsurf)
   - Gemini CLI
 
-### Platform-Specific Requirements
-
-- **macOS/Linux**: `jq` for JSON processing
-  ```bash
-  # macOS
-  brew install jq
-  
-  # Ubuntu/Debian
-  sudo apt-get install jq
-  
-  # RHEL/CentOS
-  sudo yum install jq
-  ```
-- **Windows**: PowerShell 5.0+ (pre-installed on Windows 10+)
+The installer will automatically check for all dependencies and provide platform-specific installation instructions if anything is missing.
 
 ## Installation
 
-### Option 1: Universal Installer (Recommended)
+### Option 1: Git-Free Quick Install (Recommended)
 
-The universal installer automatically detects all installed AI assistants and configures them.
+These installers download the server directly without requiring git:
+
+#### macOS/Linux/WSL
+
+```bash
+# Using curl
+curl -sSL https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.sh | bash
+
+# Using wget
+wget -qO- https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.sh | bash
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Quick install
+iwr -useb https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.ps1 | iex
+```
+
+#### Windows (Command Prompt)
+
+```cmd
+# Download and run the batch file
+curl -O https://raw.githubusercontent.com/yourusername/yt-gemini-mcp/main/install-mcp-universal-no-git.cmd
+install-mcp-universal-no-git.cmd
+```
+
+### Option 2: GitHub Gist Installation
+
+You can also share these scripts as GitHub Gists:
+
+```bash
+# Unix/Linux/macOS
+curl -sSL https://gist.github.com/YOUR_USERNAME/GIST_ID/raw/install-mcp-universal-no-git.sh | bash
+
+# Windows
+iwr -useb https://gist.github.com/YOUR_USERNAME/GIST_ID/raw/install-mcp-universal-no-git.ps1 | iex
+```
+
+### Option 3: Manual Installation with Git
+
+If you prefer to clone the repository:
 
 #### macOS/Linux
 
 ```bash
-# Download and run the installer
-curl -O https://raw.githubusercontent.com/your-username/yt-gemini-mcp/main/install-mcp-universal.sh
+# Clone and run the installer
+git clone https://github.com/your-username/yt-gemini-mcp.git
+cd yt-gemini-mcp
 chmod +x install-mcp-universal.sh
 ./install-mcp-universal.sh
 ```
@@ -53,26 +82,20 @@ chmod +x install-mcp-universal.sh
 #### Windows
 
 ```cmd
-# Download and run the installer
-curl -O https://raw.githubusercontent.com/your-username/yt-gemini-mcp/main/install-mcp-universal.cmd
+# Clone and run the installer
+git clone https://github.com/your-username/yt-gemini-mcp.git
+cd yt-gemini-mcp
 install-mcp-universal.cmd
 ```
 
-Or use PowerShell directly:
-```powershell
-.\install-mcp-universal.ps1
-```
+### What the Installer Does
 
-### Option 2: Claude Code Only (macOS/Linux)
-
-If you only use Claude Code, you can use the simpler single-client installer:
-
-```bash
-# Download and run the Claude-only installer
-curl -O https://raw.githubusercontent.com/your-username/yt-gemini-mcp/main/install-mcp-claude.sh
-chmod +x install-mcp-claude.sh
-./install-mcp-claude.sh
-```
+1. **Checks Dependencies**: Verifies Python, jq (Unix/Linux/macOS), and other requirements
+2. **Downloads the MCP Server**: Fetches the YouTube transcript server (if using git-free installer)
+3. **Detects AI Assistants**: Automatically finds installed clients (Claude, Cursor, Windsurf, Gemini CLI)
+4. **Configures Each Client**: Sets up the server for each detected assistant
+5. **Manages API Keys**: Asks for Gemini API key once and stores it securely for reuse
+6. **Installs Python Packages**: Sets up required dependencies (mcp, fastmcp, google-genai)
 
 ## Usage
 
@@ -125,6 +148,15 @@ The installer creates files in these locations:
   - Windsurf: Platform-specific locations
   - Gemini CLI: `~/.gemini/settings.json` or `%USERPROFILE%\.gemini\settings.json`
 
+## Installer Features
+
+- **No Git Required**: The git-free installers download files directly via HTTPS
+- **Self-Contained**: Single script with no external dependencies
+- **Multi-Client Support**: Configures all detected AI assistants automatically
+- **Fallback URLs**: Tries multiple CDN sources if primary download fails
+- **Secure**: API keys stored with restricted file permissions
+- **Cross-Platform**: Works on Windows, macOS, and Linux
+
 ## Troubleshooting
 
 ### "No supported AI assistants detected"
@@ -135,9 +167,37 @@ Make sure you have at least one supported client installed and that it's in your
 
 Install the missing dependencies shown in the error message. The installer provides platform-specific installation commands.
 
+**jq not found (Unix/Linux/macOS):**
+```bash
+# macOS
+brew install jq
+
+# Ubuntu/Debian
+sudo apt-get install jq
+
+# RHEL/CentOS
+sudo yum install jq
+```
+
+**Python not found:**
+- Download from https://python.org/downloads/
+- Make sure to add Python to PATH during installation
+
 ### "API key cannot be empty"
 
 You must provide a valid Gemini API key. Get one from [Google AI Studio](https://makersuite.google.com/app/apikey).
+
+### Download Failures
+
+The installer tries multiple sources:
+1. GitHub raw content
+2. jsDelivr CDN
+3. GitCDN
+
+If all fail, you may need to:
+- Check your internet connection
+- Verify firewall settings
+- Try manual download
 
 ### Server not appearing in AI assistant
 
@@ -145,11 +205,27 @@ You must provide a valid Gemini API key. Get one from [Google AI Studio](https:/
 2. Check that the installation completed successfully
 3. Verify the configuration files exist in the locations listed above
 
+### Client Not Detected
+
+Make sure the AI assistant is installed in the default location:
+- **Gemini CLI**: `~/.gemini/`
+- **Claude Code**: `claude` command available in PATH
+- **Windsurf**: Standard installation directory
+- **Cursor**: `~/.cursor/` or `%USERPROFILE%\.cursor\`
+
 ## Security Notes
 
-- API keys are stored in plain text but with restricted file permissions (owner-only)
-- Never commit or share the test scripts as they contain your API key
+- API keys are stored in `keys.json` with restricted file permissions (owner-only)
+- Never share or commit the `keys.json` file or test scripts as they contain your API key
+- The test scripts contain your API key in plain text - do not share them
 - Consider using environment variables for additional security in production environments
+
+## Updating
+
+To update the server, simply run the installer again. It will:
+- Download the latest server version
+- Preserve your API keys
+- Update all client configurations
 
 ## Contributing
 
