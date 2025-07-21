@@ -339,11 +339,38 @@ download_and_install_server() {
     fi
 }
 
-# Install Python dependencies
-install_python_deps() {
-    local python_cmd="$1"
+# Create virtual environment
+create_venv() {
+    local venv_dir="$1"
+    local python_cmd="$2"
     
-    log_info "Installing Python dependencies..."
+    if [ ! -d "$venv_dir" ]; then
+        log_info "Creating virtual environment..."
+        if "$python_cmd" -m venv "$venv_dir"; then
+            log_info "Created virtual environment at $venv_dir"
+        else
+            log_error "Failed to create virtual environment"
+            return 1
+        fi
+    else
+        log_info "Using existing virtual environment at $venv_dir"
+    fi
+    
+    # Upgrade pip in the venv
+    if "$venv_dir/bin/python" -m pip install --quiet --upgrade pip; then
+        return 0
+    else
+        log_warn "Failed to upgrade pip in virtual environment"
+        return 1
+    fi
+}
+
+# Install Python dependencies in virtual environment
+install_python_deps() {
+    local venv_dir="$1"
+    local python_cmd="$2"
+    
+    log_info "Installing Python dependencies in virtual environment..."
     
     # Create a temporary requirements file
     local temp_requirements=$(mktemp)
@@ -353,16 +380,18 @@ fastmcp>=0.1.0
 google-genai>=0.8.0
 EOF
     
-    # Install dependencies
-    if "$python_cmd" -m pip install --user -r "$temp_requirements" >/dev/null 2>&1; then
+    # Install dependencies in venv
+    if "$venv_dir/bin/pip" install --quiet -r "$temp_requirements"; then
         log_info "Python dependencies installed successfully"
+        rm -f "$temp_requirements"
+        return 0
     else
         log_warn "Failed to install some Python dependencies"
         echo "You may need to install them manually:"
-        echo "  $python_cmd -m pip install mcp fastmcp google-genai"
+        echo "  $venv_dir/bin/pip install mcp fastmcp google-genai"
+        rm -f "$temp_requirements"
+        return 1
     fi
-    
-    rm -f "$temp_requirements"
 }
 
 # Main installation
@@ -408,8 +437,16 @@ main() {
     download_and_install_server "$SERVER_URL" "$server_script"
     echo "  📄 Server script: $server_script ($server_status)"
     
+    # Create virtual environment
+    local venv_dir="$INSTALLER_DIR/venv"
+    create_venv "$venv_dir" "$python_cmd"
+    echo "  📄 Virtual environment: $venv_dir"
+    
     # Install Python dependencies
-    install_python_deps "$python_cmd"
+    install_python_deps "$venv_dir" "$python_cmd"
+    
+    # Use venv Python for running the server
+    local venv_python="$venv_dir/bin/python"
     
     # Detect installed clients
     log_info "Detecting installed AI assistants..."
@@ -443,7 +480,7 @@ main() {
                 local config_path="$HOME/.gemini/settings.json"
                 local server_config
                 server_config=$(jq -n \
-                    --arg cmd "$python_cmd" \
+                    --arg cmd "$venv_python" \
                     --arg script "$server_script" \
                     --arg key "$gemini_key" \
                     '{
@@ -459,7 +496,7 @@ main() {
                 ;;
                 
             "claude-cli")
-                if install_claude "youtube-transcript" "$python_cmd" "[\"$server_script\"]" "{\"GEMINI_API_KEY\": \"$gemini_key\"}"; then
+                if install_claude "youtube-transcript" "$venv_python" "[\"$server_script\"]" "{\"GEMINI_API_KEY\": \"$gemini_key\"}"; then
                     ((success_count++))
                 fi
                 ;;
@@ -468,7 +505,7 @@ main() {
                 local config_path="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
                 local server_config
                 server_config=$(jq -n \
-                    --arg cmd "$python_cmd" \
+                    --arg cmd "$venv_python" \
                     --arg script "$server_script" \
                     --arg key "$gemini_key" \
                     '{
@@ -495,7 +532,7 @@ main() {
                 
                 local server_config
                 server_config=$(jq -n \
-                    --arg cmd "$python_cmd" \
+                    --arg cmd "$venv_python" \
                     --arg script "$server_script" \
                     --arg key "$gemini_key" \
                     '{
@@ -514,7 +551,7 @@ main() {
                 local config_path="$HOME/.cursor/mcp.json"
                 local server_config
                 server_config=$(jq -n \
-                    --arg cmd "$python_cmd" \
+                    --arg cmd "$venv_python" \
                     --arg script "$server_script" \
                     --arg key "$gemini_key" \
                     '{
@@ -532,7 +569,7 @@ main() {
     done
     
     # Create test script
-    create_test_script "$python_cmd" "$server_script" "$gemini_key"
+    create_test_script "$venv_python" "$server_script" "$gemini_key"
     
     echo ""
     if [ $success_count -gt 0 ]; then

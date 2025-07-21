@@ -368,13 +368,44 @@ function Install-Server {
     }
 }
 
-# Install Python dependencies
-function Install-PythonDependencies {
+# Create virtual environment
+function New-VirtualEnvironment {
     param(
+        [string]$VenvDir,
         [string]$PythonCmd
     )
     
-    Write-Success "Installing Python dependencies..."
+    if (-not (Test-Path $VenvDir)) {
+        Write-Success "Creating virtual environment..."
+        $result = & $PythonCmd -m venv $VenvDir 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Created virtual environment at $VenvDir"
+        } else {
+            Write-Error "Failed to create virtual environment"
+            return $false
+        }
+    } else {
+        Write-Success "Using existing virtual environment at $VenvDir"
+    }
+    
+    # Upgrade pip in the venv
+    $venvPython = Join-Path $VenvDir "Scripts\python.exe"
+    $result = & $venvPython -m pip install --quiet --upgrade pip 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Failed to upgrade pip in virtual environment"
+    }
+    
+    return $true
+}
+
+# Install Python dependencies in virtual environment
+function Install-PythonDependencies {
+    param(
+        [string]$VenvDir,
+        [string]$PythonCmd
+    )
+    
+    Write-Success "Installing Python dependencies in virtual environment..."
     
     # Create a temporary requirements file
     $tempRequirements = [System.IO.Path]::GetTempFileName()
@@ -384,8 +415,9 @@ fastmcp>=0.1.0
 google-genai>=0.8.0
 "@ | Set-Content $tempRequirements
     
-    # Install dependencies
-    $result = & $PythonCmd -m pip install --user -r $tempRequirements 2>&1
+    # Install dependencies in venv
+    $venvPip = Join-Path $VenvDir "Scripts\pip.exe"
+    $result = & $venvPip install --quiet -r $tempRequirements 2>&1
     $success = $LASTEXITCODE -eq 0
     
     if ($success) {
@@ -393,7 +425,7 @@ google-genai>=0.8.0
     } else {
         Write-Warning "Failed to install some Python dependencies"
         Write-Host "You may need to install them manually:"
-        Write-Host "  $PythonCmd -m pip install mcp fastmcp google-genai"
+        Write-Host "  $venvPip install mcp fastmcp google-genai"
     }
     
     Remove-Item $tempRequirements -Force
@@ -461,8 +493,19 @@ function Install-Main {
     Install-Server -ServerUrl $SERVER_URL -ServerPath $serverScript
     Write-Host "  📄 Server script: $serverScript ($serverStatus)" -ForegroundColor Gray
     
+    # Create virtual environment
+    $venvDir = Join-Path $INSTALLER_DIR "venv"
+    if (-not (New-VirtualEnvironment -VenvDir $venvDir -PythonCmd $pythonCmd)) {
+        Write-Error "Failed to create virtual environment"
+        exit 1
+    }
+    Write-Host "  📄 Virtual environment: $venvDir" -ForegroundColor Gray
+    
     # Install Python dependencies
-    Install-PythonDependencies -PythonCmd $pythonCmd
+    Install-PythonDependencies -VenvDir $venvDir -PythonCmd $pythonCmd
+    
+    # Use venv Python for running the server
+    $venvPython = Join-Path $venvDir "Scripts\python.exe"
     
     # Detect installed clients
     Write-Success "Detecting installed AI assistants..."
@@ -491,7 +534,7 @@ function Install-Main {
             "gemini" {
                 $configPath = Join-Path $env:USERPROFILE ".gemini\settings.json"
                 $serverConfig = @{
-                    command = $pythonCmd
+                    command = $venvPython
                     args = @($serverScript)
                     env = @{
                         GEMINI_API_KEY = $geminiKey
@@ -502,7 +545,7 @@ function Install-Main {
             }
             
             "claude" {
-                Install-Claude -ServerName "youtube-transcript" -Command $pythonCmd `
+                Install-Claude -ServerName "youtube-transcript" -Command $venvPython `
                     -Args @($serverScript) -Env @{ GEMINI_API_KEY = $geminiKey }
             }
             
@@ -516,7 +559,7 @@ function Install-Main {
                 }
                 
                 $serverConfig = @{
-                    command = $pythonCmd
+                    command = $venvPython
                     args = @($serverScript)
                     env = @{
                         GEMINI_API_KEY = $geminiKey
@@ -529,7 +572,7 @@ function Install-Main {
             "cursor" {
                 $configPath = Join-Path $env:USERPROFILE ".cursor\mcp.json"
                 $serverConfig = @{
-                    command = $pythonCmd
+                    command = $venvPython
                     args = @($serverScript)
                     env = @{
                         GEMINI_API_KEY = $geminiKey
@@ -546,7 +589,7 @@ function Install-Main {
     }
     
     # Create test script
-    New-TestScript -PythonCmd $pythonCmd -ServerScript $serverScript -ApiKey $geminiKey
+    New-TestScript -PythonCmd $venvPython -ServerScript $serverScript -ApiKey $geminiKey
     
     Write-Host ""
     if ($successCount -gt 0) {
