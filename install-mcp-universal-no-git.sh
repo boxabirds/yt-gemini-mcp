@@ -310,11 +310,20 @@ install_claude() {
         else
             log_info "Installed $server_name for Claude Code"
         fi
-        # Claude Code stores configs internally
-        echo "  📄 Config scope: user (available in all projects)"
-        echo "  📄 Config location: Managed internally by Claude CLI"
-        echo "  💡 To view servers: claude mcp list"
-        echo "  💡 For project-specific configs, create: .mcp.json"
+        
+        # Verify installation by running claude mcp list
+        echo "  📄 Verifying installation..."
+        local mcp_output
+        mcp_output=$(claude mcp list 2>&1 | grep -A1 "$server_name" || echo "")
+        
+        if [ -n "$mcp_output" ]; then
+            echo "  ✅ Confirmed: Server is installed"
+            echo "  📄 Server details:"
+            echo "$mcp_output" | sed 's/^/     /'
+        else
+            log_warn "Could not verify installation. Run 'claude mcp list' to check manually."
+        fi
+        
         return 0
     else
         log_error "Failed to install for Claude Code"
