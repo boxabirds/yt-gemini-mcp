@@ -8,11 +8,29 @@
 #   wget -qO- https://gist.github.com/YOUR_GIST_ID/raw/install-mcp-universal-no-git.sh | bash
 #   OR
 #   Download and run: bash install-mcp-universal-no-git.sh
+#   OR
+#   Non-interactive: bash install-mcp-universal-no-git.sh --gemini-api-key YOUR_KEY
 #
 # Supports: macOS, Linux, WSL
 # Requirements: bash, jq, python3, curl or wget
 
 set -euo pipefail
+
+# Parse command line arguments
+GEMINI_API_KEY_ARG=""
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --gemini-api-key)
+            GEMINI_API_KEY_ARG="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--gemini-api-key YOUR_KEY]"
+            exit 1
+            ;;
+    esac
+done
 
 # Configuration
 REPO_BASE="https://raw.githubusercontent.com/boxabirds/yt-gemini-mcp/main"
@@ -434,18 +452,25 @@ main() {
     check_dependencies
     
     # Get Gemini API key
-    echo "📝 Setting up Gemini API key for MCP server"
-    echo ""
-    echo "This MCP server needs its own Gemini API key that will be stored"
-    echo "in each AI assistant's configuration. This allows you to:"
-    echo "  • Manage this key separately from your shell environment"
-    echo "  • Revoke access without affecting other applications"
-    echo "  • Track usage specifically for YouTube video analysis"
-    echo ""
-    echo "Get your API key at: https://aistudio.google.com/apikey"
-    
     local gemini_key
-    gemini_key=$(request_api_key "GEMINI_API_KEY" "")
+    if [ -n "$GEMINI_API_KEY_ARG" ]; then
+        # Use provided API key (non-interactive mode)
+        gemini_key="$GEMINI_API_KEY_ARG"
+        log_info "Using provided Gemini API key"
+    else
+        # Interactive mode - prompt for key
+        echo "📝 Setting up Gemini API key for MCP server"
+        echo ""
+        echo "This MCP server needs its own Gemini API key that will be stored"
+        echo "in each AI assistant's configuration. This allows you to:"
+        echo "  • Manage this key separately from your shell environment"
+        echo "  • Revoke access without affecting other applications"
+        echo "  • Track usage specifically for YouTube video analysis"
+        echo ""
+        echo "Get your API key at: https://aistudio.google.com/apikey"
+        
+        gemini_key=$(request_api_key "GEMINI_API_KEY" "")
+    fi
     
     # Detect Python
     local python_cmd
