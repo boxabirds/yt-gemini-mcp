@@ -50,10 +50,23 @@ function Download-File {
         [string]$Output
     )
     
+    # Add cache-busting parameter to URL
+    $cacheBuster = "cb=$([DateTimeOffset]::Now.ToUnixTimeSeconds())"
+    if ($Url -contains "?") {
+        $Url = "${Url}&${cacheBuster}"
+    } else {
+        $Url = "${Url}?${cacheBuster}"
+    }
+    
     Write-Success "Downloading from: $Url"
     
     try {
-        Invoke-WebRequest -Uri $Url -OutFile $Output -UseBasicParsing
+        # Use headers to prevent caching
+        $headers = @{
+            'Cache-Control' = 'no-cache'
+            'Pragma' = 'no-cache'
+        }
+        Invoke-WebRequest -Uri $Url -OutFile $Output -UseBasicParsing -Headers $headers
         return $true
     } catch {
         Write-Error "Failed to download $Url : $_"

@@ -61,15 +61,25 @@ download_file() {
     local output="$2"
     local downloader=$(get_downloader)
     
+    # Add cache-busting parameter to URL
+    local cache_buster="cb=$(date +%s)"
+    if [[ "$url" == *"?"* ]]; then
+        url="${url}&${cache_buster}"
+    else
+        url="${url}?${cache_buster}"
+    fi
+    
     log_info "Downloading from: $url"
     
     if [[ "$downloader" == "curl"* ]]; then
-        if ! curl -sSL "$url" -o "$output"; then
+        # Use -H to bypass cache and add timestamp
+        if ! curl -sSL -H 'Cache-Control: no-cache' -H 'Pragma: no-cache' "$url" -o "$output"; then
             log_error "Failed to download $url"
             return 1
         fi
     else
-        if ! wget -qO "$output" "$url"; then
+        # wget with no-cache headers
+        if ! wget --no-cache --no-cookies -qO "$output" "$url"; then
             log_error "Failed to download $url"
             return 1
         fi
