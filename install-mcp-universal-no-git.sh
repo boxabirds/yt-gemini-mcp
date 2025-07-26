@@ -280,14 +280,31 @@ install_claude() {
     fi
     
     # Set environment variables for the command
-    local env_cmd=""
+    local env_vars=()
     if [ -n "$env_json" ] && [ "$env_json" != "{}" ]; then
         while IFS='=' read -r key value; do
-            [ -n "$key" ] && env_cmd="$env_cmd $key=\"$value\""
+            [ -n "$key" ] && env_vars+=("$key=$value")
         done < <(echo "$env_json" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' 2>/dev/null || echo "")
     fi
     
-    if eval "$env_cmd" "${cmd[@]}" 2>/dev/null; then
+    # Execute command with proper quoting
+    if [ ${#env_vars[@]} -gt 0 ]; then
+        # Run with environment variables
+        if env "${env_vars[@]}" "${cmd[@]}" 2>/dev/null; then
+            local success=true
+        else
+            local success=false
+        fi
+    else
+        # Run without environment variables
+        if "${cmd[@]}" 2>/dev/null; then
+            local success=true
+        else
+            local success=false
+        fi
+    fi
+    
+    if [ "$success" = true ]; then
         if [ -n "$existing_server" ]; then
             log_info "Updated existing $server_name for Claude Code"
         else
