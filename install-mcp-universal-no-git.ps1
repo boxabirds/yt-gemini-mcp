@@ -509,7 +509,6 @@ function Install-Main {
     }
     
     Install-Server -ServerUrl $SERVER_URL -ServerPath $serverScript
-    Write-Host "  📄 Server script: $serverScript ($serverStatus)" -ForegroundColor Gray
     
     # Create virtual environment
     $venvDir = Join-Path $INSTALLER_DIR "venv"
@@ -517,7 +516,6 @@ function Install-Main {
         Write-Error "Failed to create virtual environment"
         exit 1
     }
-    Write-Host "  📄 Virtual environment: $venvDir" -ForegroundColor Gray
     
     # Install Python dependencies
     Install-PythonDependencies -VenvDir $venvDir -PythonCmd $pythonCmd
@@ -612,6 +610,11 @@ function Install-Main {
     Write-Host ""
     if ($successCount -gt 0) {
         Write-Success "Installation complete! ($successCount/$($clients.Count) clients configured)"
+        Write-Host ""
+        Write-Host "📁 Installation locations:" -ForegroundColor Cyan
+        Write-Host "  • Server script: $serverScript"
+        Write-Host "  • Virtual environment: $venvDir"
+        Write-Host "  • Test script: $INSTALLER_DIR\test-server.cmd"
         Write-Host ""
         Write-Host "Next steps:"
         Write-Host "1. Restart any running AI assistant applications"

@@ -456,12 +456,10 @@ main() {
     fi
     
     download_and_install_server "$SERVER_URL" "$server_script"
-    echo "  📄 Server script: $server_script ($server_status)"
     
     # Create virtual environment
     local venv_dir="$INSTALLER_DIR/venv"
     create_venv "$venv_dir" "$python_cmd"
-    echo "  📄 Virtual environment: $venv_dir"
     
     # Install Python dependencies
     install_python_deps "$venv_dir" "$python_cmd"
@@ -595,6 +593,11 @@ main() {
     echo ""
     if [ $success_count -gt 0 ]; then
         log_info "Installation complete! ($success_count/${#clients[@]} clients configured)"
+        echo ""
+        echo "📁 Installation locations:"
+        echo "  • Server script: $server_script"
+        echo "  • Virtual environment: $venv_dir"
+        echo "  • Test script: $INSTALLER_DIR/test-server.sh"
         echo ""
         echo "Next steps:"
         echo "1. Restart any running AI assistant applications"
