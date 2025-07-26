@@ -264,8 +264,16 @@ install_claude() {
     
     local -a cmd=("claude" "mcp" "add" "$server_name" "-s" "user")
     
+    # Add environment variables before the -- separator
+    if [ -n "$env_json" ] && [ "$env_json" != "{}" ]; then
+        while IFS='=' read -r key value; do
+            [ -n "$key" ] && cmd+=("-e" "$key=$value")
+        done < <(echo "$env_json" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' 2>/dev/null || echo "")
+    fi
+    
+    # Add -- separator before command and args
     if [ -n "$command" ]; then
-        cmd+=("$command")
+        cmd+=("--" "$command")
         
         if [ -n "$args_json" ] && [ "$args_json" != "[]" ]; then
             local -a args_array=()
@@ -279,29 +287,11 @@ install_claude() {
         fi
     fi
     
-    # Set environment variables for the command
-    local env_vars=()
-    if [ -n "$env_json" ] && [ "$env_json" != "{}" ]; then
-        while IFS='=' read -r key value; do
-            [ -n "$key" ] && env_vars+=("$key=$value")
-        done < <(echo "$env_json" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' 2>/dev/null || echo "")
-    fi
-    
-    # Execute command with proper quoting
-    if [ ${#env_vars[@]} -gt 0 ]; then
-        # Run with environment variables
-        if env "${env_vars[@]}" "${cmd[@]}" 2>/dev/null; then
-            local success=true
-        else
-            local success=false
-        fi
+    # Execute command directly without env prefix
+    if "${cmd[@]}" 2>/dev/null; then
+        local success=true
     else
-        # Run without environment variables
-        if "${cmd[@]}" 2>/dev/null; then
-            local success=true
-        else
-            local success=false
-        fi
+        local success=false
     fi
     
     if [ "$success" = true ]; then
