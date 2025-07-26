@@ -310,10 +310,11 @@ install_claude() {
         else
             log_info "Installed $server_name for Claude Code"
         fi
-        # Claude Code stores configs based on scope
+        # Claude Code stores configs internally
         echo "  📄 Config scope: user (available in all projects)"
-        echo "  💡 To view config: claude mcp list"
-        echo "  💡 Project-specific configs go in: .mcp.json"
+        echo "  📄 Config location: Managed internally by Claude CLI"
+        echo "  💡 To view servers: claude mcp list"
+        echo "  💡 For project-specific configs, create: .mcp.json"
         return 0
     else
         log_error "Failed to install for Claude Code"
