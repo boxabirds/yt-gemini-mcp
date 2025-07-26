@@ -300,18 +300,10 @@ install_claude() {
         else
             log_info "Installed $server_name for Claude Code"
         fi
-        # Claude stores configs in platform-specific locations
-        local config_locations=(
-            "$HOME/Library/Application Support/Code - Insiders/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
-            "$HOME/.config/Code - Insiders/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
-            "$HOME/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
-        )
-        for loc in "${config_locations[@]}"; do
-            if [ -f "$loc" ]; then
-                echo "  📄 Config file: $loc"
-                break
-            fi
-        done
+        # Claude Code stores configs based on scope
+        echo "  📄 Config scope: user (available in all projects)"
+        echo "  💡 To view config: claude mcp list"
+        echo "  💡 Project-specific configs go in: .mcp.json"
         return 0
     else
         log_error "Failed to install for Claude Code"
