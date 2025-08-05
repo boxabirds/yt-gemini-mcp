@@ -4,9 +4,7 @@ A Model Context Protocol (MCP) server that enables AI coding assistants (Claude,
 
 ## Features
 
-- 🎥 **YouTube Transcript Extraction**: Fetch transcripts from any YouTube video URL
-- 🤖 **Multi-Client Support**: Works with Claude Code, Cursor, Windsurf, and other MCP-compatible clients
-- 🔑 **Secure API Key Management**: API keys are stored locally with proper permissions
+ 🤖 **Multi-Client Support**: Works with Claude Code, Cursor, Windsurf, and other MCP-compatible clients
 - 🌍 **Cross-Platform**: Installers for Windows, macOS, and Linux
 - 🚀 **Easy Installation**: Universal installers that automatically detect and configure your AI clients
 
