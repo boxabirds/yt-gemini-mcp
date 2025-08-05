@@ -117,14 +117,6 @@ https://www.youtube.com/watch?v=example123
 
 Claude will automatically use the ask-youtube server to fetch and analyze the video content.
 
-### Available Commands
-
-The server provides these MCP tools to your AI assistant:
-
-1. **get_transcript** - Fetches the transcript of a YouTube video
-   - Input: YouTube URL
-   - Output: Full transcript with timestamps
-
 ## Testing the Installation
 
 After installation, you can test the server:
