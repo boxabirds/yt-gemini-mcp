@@ -1,6 +1,6 @@
 # YouTube Transcript MCP Server
 
-A Model Context Protocol (MCP) server that enables AI coding assistants (Claude, Cursor, Windsurf, etc.) to fetch and analyze YouTube video transcripts. This server uses the Gemini API to process YouTube videos and extract their transcripts, making video content accessible to your AI assistant for analysis, summarization, and learning.
+A Model Context Protocol (MCP) server that enables AI coding assistants (Claude, Cursor, Windsurf, etc.) to analyze YouTube video transcripts. This server uses the Gemini API to process YouTube videos and extract their transcripts, making video content accessible to your AI assistant for analysis, summarization, and learning.
 
 ## Features
 
